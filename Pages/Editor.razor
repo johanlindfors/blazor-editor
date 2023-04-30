@@ -1,0 +1,45 @@
+﻿@page "/editor"
+@using BlazorEditor.Data
+@inject EditorService Service
+
+<PageTitle>Editor</PageTitle>
+
+<h1>Editor</h1>
+
+@if (tests == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                @* <th>Temp. (F)</th>
+                <th>Summary</th> *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var test in tests)
+            {
+                <tr>
+                    <td>@test.Name</td>
+                    @* <td>@forecast.TemperatureC</td>
+                    <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td> *@
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private EditorTest[]? tests;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tests = await Service.RunTestsAsync("");
+    }
+}
