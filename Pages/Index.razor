@@ -1,9 +1,60 @@
 ﻿@page "/"
+@using BlazorEditor.Data
+@using BlazorMonaco.Editor
+@inject EditorService Service
+<PageTitle>Editor</PageTitle>
 
-<PageTitle>Index</PageTitle>
+<h1>Editor</h1>
 
-<h1>Hello, world!</h1>
+<StandaloneCodeEditor Id="my-editor-instance-id"
+                      ConstructionOptions="EditorConstructionOptions"
+                      @ref="_editor"/>
+<button @onclick="RunTestsAsync">Compile</button>
 
-Welcome to your new app.
+@if (tests == null) {
+    @* <p><em>Loading...</em></p> *@
+}
+else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                @* <th>Temp. (F)</th>
+                <th>Summary</th> *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var test in tests)
+            {
+                <tr>
+                    <td>@test.Name</td>
+                    <td>@test.Success</td>
+                    @* <td>@forecast.TemperatureF</td>
+                    <td>@forecast.Summary</td> *@
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    [System.Diagnostics.CodeAnalysis.AllowNull]
+    private StandaloneCodeEditor _editor;
+    private MyMath.EditorTest[]? tests;
+
+    private async Task RunTestsAsync() {
+        if(_editor != null) {
+            var implementation = await _editor.GetValue();
+            tests = await Service.RunTestsAsync(implementation);
+        }
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor) {
+        return new StandaloneEditorConstructionOptions {
+            AutomaticLayout = true,
+            Language = "csharp",
+            Value = Constants.INITIAL_IMPLEMENTATION
+        };
+    }
+}
