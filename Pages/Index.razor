@@ -43,18 +43,24 @@ else {
     private StandaloneCodeEditor _editor;
     private MyMath.EditorTest[]? tests;
 
+    protected override Task OnInitializedAsync()
+    {
+        return RunTestsAsync();
+    }
+
     private async Task RunTestsAsync() {
-        if(_editor != null) {
-            var implementation = await _editor.GetValue();
-            tests = await Service.RunTestsAsync(implementation);
-        }
+        var implementation = _editor != null ? await _editor.GetValue() : Constants.INITIAL_IMPLEMENTATION;
+        tests = await Service.RunTestsAsync(implementation);
     }
 
     private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor) {
         return new StandaloneEditorConstructionOptions {
             AutomaticLayout = true,
             Language = "csharp",
-            Value = Constants.INITIAL_IMPLEMENTATION
+            Value = Constants.INITIAL_IMPLEMENTATION,
+            Theme = "vs-dark",
+            Minimap = new EditorMinimapOptions { Enabled = false },
+            LineNumbers = "off"
         };
     }
 }

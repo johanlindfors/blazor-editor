@@ -11,6 +11,8 @@ builder.Services.AddSingleton<EditorService>();
 
 var app = builder.Build();
 
+var editorService = app.Services.GetRequiredService<EditorService>();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

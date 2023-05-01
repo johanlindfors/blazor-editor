@@ -43,7 +43,7 @@ public class UnitTests {
         // Act
         var result = calculator.Add(1,-3);
         // Arrange
-        Assert.IsTrue(result == -1);
+        Assert.IsTrue(result == -2);
     }
 
     [Test]
