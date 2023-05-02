@@ -1,64 +1,171 @@
 static class Constants {
     public const string ASSEMBLY_NAME = "Generated.dll";
     public const string INITIAL_IMPLEMENTATION = 
-        @"public class Calculator {
-    public int Add(int x, int y) {
-        return x - y;
+        @"[Authorize]
+[HttpGet(""transfer/{amount:int}/{from}/{to}"")]
+public async Task<int> Transfer(int amount, string from, string to)
+{
+    var fromAccount = await _accountRepository.FindByIdAsync(from);
+    var toAccount = await _accountRepository.FindByIdAsync(to);
+
+    if (fromAccount.Balance < amount)
+    {
+        throw new ArgumentException(""Insufficient funds"");
+    }
+
+    toAccount.Balance += amount;
+    await _accountRepository.SaveAsync(toAccount);
+
+    fromAccount.Balance -= amount;
+    await _accountRepository.SaveAsync(fromAccount);
+
+    return fromAccount.Balance;
+}";
+
+public const string PROGRAM_CODE = @"public partial class Program { 
+public static void Main(string[] args) {
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
+builder.Services.AddSingleton<IRepository<Account>, AccountRepository>();
+
+var app = builder.Build();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+}
+}";
+
+public const string ACCOUNT_MODELS = @"
+public struct Account
+{
+    public string Id { get; }
+    public int Balance { get; set; }
+
+    public Account(string id, int? balance)
+    {
+        Id = id;
+        Balance = balance ?? 0;
+    }
+}
+
+public interface IRepository<T>
+{
+    Task<T> FindByIdAsync(string id);
+    Task SaveAsync(T account);
+}
+
+public class AccountRepository : IRepository<Account>
+{
+    Dictionary<string, Account> _accounts = new Dictionary<string, Account>();
+
+    public AccountRepository()
+    {
+        _accounts.Add(""1"", new Account(""1"", 1000));
+        _accounts.Add(""2"", new Account(""2"", 1000));
+    }
+
+    public Task<Account> FindByIdAsync(string accountId)
+    {
+        return Task.FromResult(_accounts[accountId]);
+    }
+
+    public Task SaveAsync(Account account)
+    {
+        _accounts[account.Id] = account;
+        return Task.CompletedTask;
     }
 }";
 
+public const string BANKING_API_CONTROLLER = @"
+[ApiController]
+[Route(""[controller]"")]
+public class BankingController : ControllerBase
+{
+    private readonly ILogger<BankingController> _logger;
+    private readonly IRepository<Account> _accountRepository;
+
+    public BankingController(ILogger<BankingController> logger, IRepository<Account> accountRepository)
+    {
+        _logger = logger;
+        _accountRepository = accountRepository;
+    }";
+
     public const string USINGS =
-        @"using System;
+@"using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using System.Reflection;
 using System.Linq;
 using System.Text;
-
-namespace MyMath;
-public class EditorTest
-{
-    public string? Name { get; set; }
-    public bool Success { get; set; }
-}";
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+";
 
     public const string TESTS = 
-        @"
+@"
 [TestFixture]
 public class UnitTests {
+
     [Test]
-    public void TestAdd() {
-        // Arrange
-        var calculator = new MyMath.Calculator();
-        // Act
-        var result = calculator.Add(1,3);
-        // Arrange
-        Assert.IsTrue(result == 4);
+    public void CanTransferBalance()
+    {
+        // arrange
+        var controller = new BankingController(null, new AccountRepository());
+        // act
+        var result = controller.Transfer(100, ""1"", ""2"").Result;
+        // assert
+        Assert.True(result == 900);
     }
 
     [Test]
-    public void TestAddNegativeValue() {
-        // Arrange
-        var calculator = new MyMath.Calculator();
-        // Act
-        var result = calculator.Add(1,-3);
-        // Arrange
-        Assert.IsTrue(result == -2);
+    public void NegativeInputNotAccepted()
+    {
+        // arrange
+        var controller = new BankingController(null, new AccountRepository());
+        // act
+        var result = controller.Transfer(-100, ""1"", ""2"").Result;
+        // assert
+        Assert.True(result == 1100);
     }
 
     [Test]
-    public void TestAddNegativeValue2() {
-        // Arrange
-        var calculator = new MyMath.Calculator();
-        // Act
-        var result = calculator.Add(-1,3);
-        // Arrange
-        Assert.IsTrue(result == 2);
+    public void NotExistantAccountsShouldThrowError()
+    {
+        // arrange
+        var controller = new BankingController(null, new AccountRepository());
+        // act
+        var result = controller.Transfer(100, ""3"", ""4"").Result;
+        // assert
+        Assert.True(result == 0);
+    }
+
+    [Test]
+    public void NotEnoughFundsShouldThrowException()
+    {
+        // arrange
+        var controller = new BankingController(null, new AccountRepository());
+        // act
+        var result = controller.Transfer(10000, ""1"", ""2"").Result;
+        // assert
+        //Assert.True(result == 0);
     }
 }";
 
     public const string TEST_RUNNER = 
         @"
+public class EditorTest
+{
+    public string? Name { get; set; }
+    public bool Success { get; set; }
+}
+
+namespace BlazorTesting {
 public class TestRunner {
     public EditorTest[] Execute() {
         var count = 0;
@@ -84,6 +191,7 @@ public class TestRunner {
 
         return testResults.ToArray();
     }
+}
 }
 ";
 

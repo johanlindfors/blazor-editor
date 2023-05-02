@@ -23,6 +23,12 @@ public class EditorService {
                         return File.ReadAllBytes(_outputAssemblyPath);
                     case "nunit.framework":
                         return File.ReadAllBytes(Path.Combine(_binaryDirectory, "nunit.framework.dll"));
+                    case "Microsoft.AspNetCore.Mvc.Core":
+                        return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Mvc.Core.dll"));
+                    case "Microsoft.AspNetCore.Mvc.Abstractions":
+                        return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Mvc.Abstractions.dll"));
+                    case "Microsoft.Extensions.Logging.Abstractions":
+                        return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.Extensions.Logging.Abstractions.dll"));
                 }
                 return null;
             });
@@ -31,7 +37,11 @@ public class EditorService {
     public Task<MyMath.EditorTest[]> RunTestsAsync(string implementation) {
         var code = new System.Text.StringBuilder();
         code.Append(Constants.USINGS);
+        code.Append(Constants.PROGRAM_CODE);
+        code.Append(Constants.ACCOUNT_MODELS);
+        code.Append(Constants.BANKING_API_CONTROLLER);
         code.Append(implementation);
+        code.Append("}");
         code.Append(Constants.TESTS);
         code.Append(Constants.TEST_RUNNER);
 
@@ -56,23 +66,35 @@ public class EditorService {
         }
 
         using var runtime = new IsolatedRuntime(_runtimeHost);
-        var instance = runtime.CreateObject(Constants.ASSEMBLY_NAME, "MyMath", "TestRunner");
+        var instance = runtime.CreateObject(Constants.ASSEMBLY_NAME, "BlazorTesting", "TestRunner");
         var result = instance.Invoke<MyMath.EditorTest[]>("Execute");
         return Task.FromResult(result);
     }
 
     private EmitResult RoslynCompiler(string code) {
+        //System.Console.WriteLine(code);
         var tree = SyntaxFactory.ParseSyntaxTree(code);
         var references = new[] {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "nunit.framework.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Mvc.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Mvc.Core.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Routing.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Http.Abstractions.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Authorization.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Authorization.Policy.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.Extensions.DependencyInjection.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.Extensions.Logging.Abstractions.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.Extensions.Hosting.Abstractions.dll")),
+            MetadataReference.CreateFromFile(Path.Combine(_binaryDirectory, "Microsoft.Extensions.DependencyInjection.Abstractions.dll")),
             MetadataReference.CreateFromFile(Path.Combine(_wasmBinaryDirectory,"netstandard.dll")),
             MetadataReference.CreateFromFile(Path.Combine(_wasmBinaryDirectory, "System.Linq.dll")),
             MetadataReference.CreateFromFile(Path.Combine(_wasmBinaryDirectory, "System.Console.dll")),
             MetadataReference.CreateFromFile(Path.Combine(_wasmBinaryDirectory, "System.Collections.dll")),
             MetadataReference.CreateFromFile(Path.Combine(_wasmBinaryDirectory, "System.Runtime.dll")),
         };
-        var compilation = CSharpCompilation.Create(Constants.INITIAL_IMPLEMENTATION)
+        var compilation = CSharpCompilation.Create(Constants.ASSEMBLY_NAME)
             .WithOptions(
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
             .AddReferences(references)
