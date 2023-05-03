@@ -8,10 +8,10 @@ public async Task<int> Transfer(int amount, string from, string to)
     var fromAccount = await _accountRepository.FindByIdAsync(from);
     var toAccount = await _accountRepository.FindByIdAsync(to);
 
-    if (fromAccount.Balance < amount)
-    {
-        throw new ArgumentException(""Insufficient funds"");
-    }
+    //if (fromAccount.Balance < amount)
+    //{
+    //    throw new ArgumentException(""Insufficient funds"");
+    //}
 
     toAccount.Balance += amount;
     await _accountRepository.SaveAsync(toAccount);
@@ -131,7 +131,7 @@ public class UnitTests {
         // act
         var result = controller.Transfer(-100, ""1"", ""2"").Result;
         // assert
-        Assert.True(result == 1100);
+        Assert.True(result == 1000);
     }
 
     [Test]
@@ -151,9 +151,12 @@ public class UnitTests {
         // arrange
         var controller = new BankingController(null, new AccountRepository());
         // act
-        var result = controller.Transfer(10000, ""1"", ""2"").Result;
+        var exception = Assert.ThrowsAsync<ArgumentException>(async () => {
+            var result = await controller.Transfer(10000, ""1"", ""2"");
+        });
         // assert
-        //Assert.True(result == 0);
+        Console.WriteLine(exception);
+        Assert.AreEqual(""Insufficient funds"", exception.Message);
     }
 }";
 

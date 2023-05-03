@@ -29,6 +29,10 @@ public class EditorService {
                         return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Mvc.Abstractions.dll"));
                     case "Microsoft.Extensions.Logging.Abstractions":
                         return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.Extensions.Logging.Abstractions.dll"));
+                    case "Microsoft.AspNetCore.Authorization":
+                        return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Authorization.dll"));
+                    case "Microsoft.AspNetCore.Metadata":
+                        return File.ReadAllBytes(Path.Combine(_binaryDirectory, "Microsoft.AspNetCore.Metadata.dll"));
                 }
                 return null;
             });
